@@ -93,7 +93,8 @@ function GlobalSearchWrapper({ onClose }: { onClose: () => void }) {
     const t = setTimeout(async () => {
       try {
         const token = localStorage.getItem('token');
-        const r = await fetch('/api/search?q=' + encodeURIComponent(q), { headers: { Authorization: `Bearer ${token}` } });
+        const base = (import.meta as any).env?.VITE_API_URL || '';
+        const r = await fetch(`${base}/api/search?q=` + encodeURIComponent(q), { headers: { Authorization: `Bearer ${token}` } });
         if (r.ok) setRes(await r.json());
       } catch {}
     }, 300); return () => clearTimeout(t);

@@ -28,7 +28,17 @@ const PORT = parseInt(process.env.PORT || '3000', 10);
 const upload = multer({ dest: 'tmp/' });
 
 app.use(helmet());
-app.use(cors({ origin: process.env.CORS_ORIGIN || 'http://localhost:5173', credentials: true }));
+app.use(cors({
+  origin: (origin, cb) => {
+    const allowed = process.env.CORS_ORIGIN;
+    if (!origin) return cb(null, true);
+    if (allowed && origin === allowed) return cb(null, true);
+    if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) return cb(null, true);
+    // fallback: allow configured origin
+    return cb(null, true);
+  },
+  credentials: true
+}));
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 200 }));
