@@ -1,0 +1,62 @@
+openapi: 3.0.3
+info:
+  title: School Dashboard API
+  version: 1.0.0
+  description: Sistem Informasi Manajemen Sekolah Terintegrasi Dapodik
+servers:
+  - url: http://localhost:3000
+    description: Local / LAN
+paths:
+  /api/health:
+    get:
+      summary: Health check
+      responses:
+        '200': { description: ok }
+  /api/auth/login:
+    post:
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username: { type: string }
+                password: { type: string }
+      responses:
+        '200': { description: token }
+  /api/students:
+    get:
+      summary: List siswa (pagination 20, search, filter)
+      parameters:
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: page
+          in: query
+          schema: { type: integer }
+        - name: limit
+          in: query
+          schema: { type: integer }
+      responses:
+        '200': { description: list }
+    post:
+      summary: Create siswa (Zod validasi NISN 10 digit, NIK 16)
+      responses:
+        '201': { description: created }
+  /api/dapodik/preview:
+    post:
+      summary: Preview diff NEW/UPDATED/CONFLICT
+      responses:
+        '200': { description: preview }
+  /api/sync/history:
+    get:
+      summary: Riwayat sinkronisasi
+      responses:
+        '200': { description: list }
+  /api/backup:
+    post:
+      summary: Backup manual
+      responses:
+        '200': { description: backup }

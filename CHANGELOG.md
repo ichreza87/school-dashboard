@@ -17,3 +17,13 @@
 
 ### Added
 - Foundation, DB schema, auth, module awal
+
+## [1.0.1] - 2026-09-07
+
+### Added
+- OpenAPI 3.0 contract (docs/api/openapi.yaml)
+- e2e Playwright skeleton (e2e/school.spec.ts) + frontend smoke test
+- Benchmark audit: pagination, aggregation, indexes, build size 687kB
+
+### Fixed
+- Verified all README commands (prisma validate, tsc, build, tests)
