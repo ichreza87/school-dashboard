@@ -3,9 +3,23 @@ import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
 import Students from './pages/Students';
+import SiswaDetail from './pages/SiswaDetail';
 import Teachers from './pages/Teachers';
 import Rombel from './pages/Rombel';
+import Mapel from './pages/Mapel';
+import Jadwal from './pages/Jadwal';
+import KehadiranSiswa from './pages/KehadiranSiswa';
+import KehadiranGuru from './pages/KehadiranGuru';
+import Nilai from './pages/Nilai';
+import Perkembangan from './pages/Perkembangan';
+import Analytics from './pages/Analytics';
+import Laporan from './pages/Laporan';
 import Dapodik from './pages/Dapodik';
+import Sinkronisasi from './pages/Sinkronisasi';
+import Backup from './pages/Backup';
+import Audit from './pages/Audit';
+import Pengguna from './pages/Pengguna';
+import Pengaturan from './pages/Pengaturan';
 import Generic from './pages/Generic';
 import { getToken } from './lib/api';
 
@@ -21,22 +35,23 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<Protected><Dashboard /></Protected>} />
         <Route path="/siswa" element={<Protected><Students /></Protected>} />
+        <Route path="/siswa/:id" element={<Protected><SiswaDetail /></Protected>} />
         <Route path="/guru" element={<Protected><Teachers /></Protected>} />
         <Route path="/rombel" element={<Protected><Rombel /></Protected>} />
-        <Route path="/mapel" element={<Protected><Generic title="Mata Pelajaran" desc="Kelola mata pelajaran, kelompok, dan guru pengampu." /></Protected>} />
-        <Route path="/jadwal" element={<Protected><Generic title="Jadwal Sekolah" desc="Jadwal guru/kelas/ruang dengan deteksi konflik otomatis." /></Protected>} />
-        <Route path="/kehadiran-siswa" element={<Protected><Generic title="Kehadiran Siswa" desc="Presensi harian, massal, rekap mingguan/bulanan, alert <90%." /></Protected>} />
-        <Route path="/kehadiran-guru" element={<Protected><Generic title="Kehadiran Guru" desc="Hadir/Sakit/Izin/Cuti/Dinas Luar/Alpa/Terlambat." /></Protected>} />
-        <Route path="/nilai" element={<Protected><Generic title="Nilai Siswa" desc="Tugas, Ulangan, Formatif, Sumatif, UTS, UAS — formula configurable." /></Protected>} />
-        <Route path="/perkembangan" element={<Protected><Generic title="Perkembangan Siswa" desc="Grafik individual per semester dengan trend MENINGKAT/MENURUN." /></Protected>} />
-        <Route path="/analytics" element={<Protected><Generic title="Analytics Sekolah" desc="Perbandingan kelas, tren nilai & kehadiran, grafik interaktif." /></Protected>} />
-        <Route path="/laporan" element={<Protected><Generic title="Report Center" desc="Siswa, Guru (R7/R10 configurable), Kehadiran, Nilai, Dapodik — export PDF/Excel/CSV." /></Protected>} />
+        <Route path="/mapel" element={<Protected><Mapel /></Protected>} />
+        <Route path="/jadwal" element={<Protected><Jadwal /></Protected>} />
+        <Route path="/kehadiran-siswa" element={<Protected><KehadiranSiswa /></Protected>} />
+        <Route path="/kehadiran-guru" element={<Protected><KehadiranGuru /></Protected>} />
+        <Route path="/nilai" element={<Protected><Nilai /></Protected>} />
+        <Route path="/perkembangan" element={<Protected><Perkembangan /></Protected>} />
+        <Route path="/analytics" element={<Protected><Analytics /></Protected>} />
+        <Route path="/laporan" element={<Protected><Laporan /></Protected>} />
         <Route path="/dapodik" element={<Protected><Dapodik /></Protected>} />
-        <Route path="/sinkronisasi" element={<Protected><Generic title="Sinkronisasi" desc="LOCAL → COMPARE → REMOTE → DIFF ENGINE → CONFLICT DETECTION → USER CONFIRMATION → SYNC" /></Protected>} />
-        <Route path="/backup" element={<Protected><Generic title="Backup Center" desc="Backup manual/scheduled, restore, checksum, verification, rollback." /></Protected>} />
-        <Route path="/pengguna" element={<Protected><Generic title="Pengguna & Role" desc="SUPER_ADMIN, ADMIN_SEKOLAH, OPERATOR, KEPALA_SEKOLAH, GURU, WALI_KELAS, TU — permission configurable." /></Protected>} />
-        <Route path="/pengaturan" element={<Protected><Generic title="Pengaturan" desc="Threshold kehadiran, tahun ajaran, semester, formula nilai." /></Protected>} />
-        <Route path="/audit" element={<Protected><Generic title="Audit Log" desc="Login, CRUD, Import/Export, Sinkronisasi, Backup/Restore — lengkap." /></Protected>} />
+        <Route path="/sinkronisasi" element={<Protected><Sinkronisasi /></Protected>} />
+        <Route path="/backup" element={<Protected><Backup /></Protected>} />
+        <Route path="/pengguna" element={<Protected><Pengguna /></Protected>} />
+        <Route path="/pengaturan" element={<Protected><Pengaturan /></Protected>} />
+        <Route path="/audit" element={<Protected><Audit /></Protected>} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </BrowserRouter>

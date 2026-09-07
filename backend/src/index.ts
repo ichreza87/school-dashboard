@@ -13,6 +13,15 @@ import * as xlsx from 'xlsx';
 import { randomUUID } from 'crypto';
 import fs from 'fs';
 import path from 'path';
+import { z } from 'zod';
+
+const studentSchema = z.object({
+  fullName: z.string().min(2, 'Nama minimal 2 karakter'),
+  nisn: z.string().regex(/^\d{10}$/, 'NISN harus 10 digit').optional().or(z.literal('')),
+  nis: z.string().optional(),
+  nik: z.string().regex(/^\d{16}$/, 'NIK harus 16 digit').optional().or(z.literal('')),
+  gender: z.enum(['L','P']),
+});
 
 const app = express();
 const PORT = parseInt(process.env.PORT || '3000', 10);
@@ -78,6 +87,8 @@ app.get('/api/students/:id', authMiddleware as any, async (req, res) => {
 
 app.post('/api/students', authMiddleware as any, async (req, res) => {
   try {
+    const parsed = studentSchema.safeParse(req.body);
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.errors.map(e=>e.message).join(', ') });
     const data = req.body;
     const s = await prisma.student.create({ data: { ...data, birthDate: data.birthDate ? new Date(data.birthDate) : undefined } });
     await prisma.auditLog.create({ data: { userId: (req as any).user?.id, action: 'CREATE', entity: 'Student', entityId: s.id } });
@@ -311,14 +322,34 @@ app.get('/api/data-quality', authMiddleware as any, async (_req, res) => {
     prisma.student.count({ where: { nisn: null } }),
     prisma.student.count({ where: { nik: null } }),
   ]);
-  // duplicate detection by nisn
   const dupNisn = await prisma.$queryRaw`SELECT nisn, COUNT(*) as c FROM Student WHERE nisn IS NOT NULL GROUP BY nisn HAVING c > 1` as any[];
-  // unsynced = recent sync conflicts
   const conflicts = await prisma.syncConflict.count({ where: { resolution: null } });
   res.json({
     studentCompleteness: totalStudents ? +(((totalStudents - missingNisn) / totalStudents) * 100).toFixed(1) : 100,
     missingNisn, missingNik, duplicateCount: dupNisn.length, conflictCount: conflicts, totalStudents,
   });
+});
+
+// ── Duplicate Detection (NISN/NIK/NIS/Nama+TglLahir) ──────────
+app.get('/api/duplicates', authMiddleware as any, async (req, res) => {
+  const { type = 'nisn' } = req.query as any;
+  if (type === 'nisn') {
+    const dups = await prisma.$queryRaw`SELECT nisn, GROUP_CONCAT(fullName, ' | ') as names, COUNT(*) as c FROM Student WHERE nisn IS NOT NULL AND nisn != '' GROUP BY nisn HAVING c > 1` as any[];
+    const enriched = dups.map((d:any)=> ({ key: d.nisn, names: d.names, count: d.c, match: 'HIGH' }));
+    res.json(enriched);
+  } else if (type === 'nama') {
+    const students = await prisma.student.findMany({ select: { id:true, fullName:true, birthDate:true, nisn:true } });
+    const map = new Map<string, any[]>();
+    for (const s of students) {
+      const key = `${s.fullName.toLowerCase().trim()}_${s.birthDate ? new Date(s.birthDate).toISOString().slice(0,10) : ''}`;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(s);
+    }
+    const dups = Array.from(map.entries()).filter(([,v])=>v.length>1).map(([k,v])=> ({ key:k, count:v.length, members:v, match: v.length>2?'HIGH':'MEDIUM' }));
+    res.json(dups.slice(0,20));
+  } else {
+    res.json([]);
+  }
 });
 
 // ── Import Excel ──────────────────────────────────────────────

@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '../lib/cn';
 import { LayoutDashboard, Users, GraduationCap, School, BookOpen, Calendar, ClipboardList, BarChart3, FileText, Database, GitCompare, Shield, Settings, LogOut, Menu, X, Search, Moon, Sun } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import GlobalSearch from './GlobalSearch';
 
 const nav = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/' },
@@ -35,14 +36,19 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const nav2 = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const [dark, setDark] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   useEffect(() => { document.documentElement.classList.toggle('dark', dark); }, [dark]);
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setSearchOpen(true); } };
+    window.addEventListener('keydown', h); return () => window.removeEventListener('keydown', h);
+  }, []);
   const role = JSON.parse(localStorage.getItem('user') || '{}')?.role;
   return (
     <div className="min-h-screen flex bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100">
       <aside className={cn('bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col transition-all', collapsed ? 'w-16' : 'w-64')}>
         <div className="h-14 flex items-center px-3 gap-2 border-b border-slate-200 dark:border-slate-700">
           {!collapsed && <span className="font-bold text-primary-600">School Dashboard</span>}
-          <button onClick={() => setCollapsed(!collapsed)} className="ml-auto p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700">{collapsed ? <Menu size={18}/> : <X size={18}/>}</button>
+          <button onClick={() => setCollapsed(!collapsed)} className="ml-auto p-1.5 rounded hover:bg-slate-100 dark:hover:bg-slate-700" aria-label="Toggle sidebar">{collapsed ? <Menu size={18}/> : <X size={18}/>}</button>
         </div>
         <nav className="flex-1 overflow-y-auto py-2">
           {nav.map((item: any, i) => item.heading ? (
@@ -60,14 +66,44 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </aside>
       <div className="flex-1 flex flex-col min-w-0">
         <header className="h-14 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center px-4 gap-3">
-          <div className="flex-1 flex items-center gap-2 max-w-md">
+          <button onClick={() => setSearchOpen(true)} className="flex-1 flex items-center gap-2 max-w-md border rounded-lg px-3 py-2 text-sm text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700 text-left">
             <Search size={18} className="text-slate-400" />
-            <input placeholder="Cari siswa, guru, NISN... (Ctrl+K)" className="flex-1 bg-transparent outline-none text-sm placeholder:text-slate-400" onKeyDown={(e) => { if (e.key==='k' && (e.ctrlKey||e.metaKey)) e.preventDefault(); }} />
-          </div>
-          <button onClick={() => setDark(!dark)} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">{dark ? <Sun size={18}/> : <Moon size={18}/>}</button>
-          <div className="w-8 h-8 rounded-full bg-primary-600 text-white flex items-center justify-center text-sm font-bold">A</div>
+            Cari siswa, guru, NISN... (Ctrl+K)
+          </button>
+          <button onClick={() => setDark(!dark)} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700" aria-label="Toggle dark mode">{dark ? <Sun size={18}/> : <Moon size={18}/>}</button>
+          <div className="w-8 h-8 rounded-full bg-primary-600 text-white flex items-center justify-center text-sm font-bold" title={role}>A</div>
         </header>
         <main className="flex-1 p-6 overflow-y-auto">{children}</main>
+      </div>
+      {searchOpen && <GlobalSearchWrapper onClose={() => setSearchOpen(false)} />}
+    </div>
+  );
+}
+
+function GlobalSearchWrapper({ onClose }: { onClose: () => void }) {
+  const [q, setQ] = useState('');
+  const [res, setRes] = useState<any[]>([]);
+  const nav = useNavigate();
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', h); return () => window.removeEventListener('keydown', h);
+  }, [onClose]);
+  useEffect(() => {
+    if (q.length < 2) { setRes([]); return; }
+    const t = setTimeout(async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const r = await fetch('/api/search?q=' + encodeURIComponent(q), { headers: { Authorization: `Bearer ${token}` } });
+        if (r.ok) setRes(await r.json());
+      } catch {}
+    }, 300); return () => clearTimeout(t);
+  }, [q]);
+  return (
+    <div className="fixed inset-0 bg-black/30 flex items-start justify-center pt-20 z-50" onClick={onClose}>
+      <div className="bg-white dark:bg-slate-800 rounded-xl w-full max-w-lg p-4 shadow-xl" onClick={e => e.stopPropagation()}>
+        <input autoFocus placeholder="Cari siswa, guru, NIS/NISN/NIK..." value={q} onChange={e => setQ(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm dark:bg-slate-700 dark:border-slate-600" />
+        <div className="mt-3 space-y-1 max-h-64 overflow-auto text-sm">{res.map((r: any) => <button key={r.type + r.id} onClick={() => { onClose(); nav(r.type === 'siswa' ? '/siswa/' + r.id : '/guru'); }} className="w-full text-left px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded flex justify-between"><span>{r.label}</span><span className="text-xs text-slate-500">{r.type}</span></button>)}{q.length >= 2 && res.length === 0 && <div className="text-slate-500 p-2 text-xs">Tidak ada hasil.</div>}</div>
+        <div className="text-xs text-slate-400 mt-2">Shortcut: Ctrl+K • ESC untuk tutup</div>
       </div>
     </div>
   );

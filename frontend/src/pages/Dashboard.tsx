@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { Users, GraduationCap, School, ClipboardCheck, TrendingUp, Award } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import DataQuality from '../components/DataQuality';
 
 function StatCard({ title, value, icon: Icon, sub, color }: any) {
   return (
@@ -75,6 +76,7 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+      <DataQuality />
     </div>
   );
 }
