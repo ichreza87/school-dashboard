@@ -1,0 +1,399 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+  // For production PostgreSQL, change to:
+  // provider = "postgresql"
+  // url      = env("DATABASE_URL")
+}
+
+// ── Auth & RBAC ───────────────────────────────────────────────
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  email     String?  @unique
+  password  String
+  name      String
+  role      String   // SUPER_ADMIN | ADMIN_SEKOLAH | OPERATOR | KEPALA_SEKOLAH | GURU | WALI_KELAS | TU
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  auditLogs AuditLog[]
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  String?
+  detail    String?
+  ip        String?
+  createdAt DateTime @default(now())
+  @@index([entity, entityId])
+  @@index([createdAt])
+}
+
+// ── School ────────────────────────────────────────────────────
+model School {
+  id          String @id @default(cuid())
+  npsn        String @unique
+  name        String
+  address     String?
+  village     String?
+  district    String?
+  regency     String?
+  province    String?
+  phone       String?
+  email       String?
+  principal   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AcademicYear {
+  id        String     @id @default(cuid())
+  name      String     @unique // e.g. 2025/2026
+  isActive  Boolean    @default(false)
+  createdAt DateTime   @default(now())
+  semesters Semester[]
+}
+
+model Semester {
+  id              String       @id @default(cuid())
+  academicYearId  String
+  academicYear    AcademicYear @relation(fields: [academicYearId], references: [id])
+  name            String // Ganjil / Genap
+  isActive        Boolean      @default(false)
+  createdAt       DateTime     @default(now())
+  @@unique([academicYearId, name])
+}
+
+// ── Students ──────────────────────────────────────────────────
+model Student {
+  id              String   @id @default(cuid())
+  nis             String?  @unique
+  nisn            String?  @unique
+  nik             String?  @unique
+  fullName        String
+  nickName        String?
+  gender          String   // L / P
+  birthPlace      String?
+  birthDate       DateTime?
+  religion        String?
+  address         String?
+  village         String?
+  district        String?
+  regency         String?
+  province        String?
+  kkNumber        String?
+  fatherName      String?
+  motherName      String?
+  guardianName    String?
+  phone           String?
+  email           String?
+  rombelId        String?
+  rombel          Rombel?  @relation(fields: [rombelId], references: [id])
+  enrollYear      Int?
+  status          String   @default("Aktif") // Aktif, Lulus, Mutasi Masuk, Mutasi Keluar, Tidak Aktif
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  attendances     StudentAttendance[]
+  grades          StudentGrade[]
+  achievements    Achievement[]
+  notes           StudentNote[]
+  histories       StudentHistory[]
+
+  @@index([fullName])
+  @@index([status])
+}
+
+model StudentHistory {
+  id        String   @id @default(cuid())
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  action    String
+  detail    String?
+  createdAt DateTime @default(now())
+}
+
+model StudentNote {
+  id        String   @id @default(cuid())
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  author    String?
+  category  String?
+  content   String
+  createdAt DateTime @default(now())
+}
+
+model Achievement {
+  id        String   @id @default(cuid())
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title     String
+  level     String?
+  date      DateTime?
+  description String?
+  createdAt DateTime @default(now())
+}
+
+// ── Teachers ──────────────────────────────────────────────────
+model Teacher {
+  id                String   @id @default(cuid())
+  nip               String?  @unique
+  nuptk             String?  @unique
+  nik               String?  @unique
+  name              String
+  prefixTitle       String?
+  suffixTitle       String?
+  gender            String?
+  birthPlace        String?
+  birthDate         DateTime?
+  employmentStatus  String?  // PNS, PPPK, Honorer, etc.
+  ptkType           String?  // Jenis PTK
+  position          String?  // Jabatan
+  rank              String?  // Pangkat
+  group             String?  // Golongan
+  lastEducation     String?
+  studyProgram      String?
+  certification     Boolean  @default(false)
+  certificateNo     String?
+  subject           String?
+  teachingHours     Int      @default(0)
+  additionalTask    String?
+  phone             String?
+  email             String?
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  educations        TeacherEducation[]
+  positions         TeacherPosition[]
+  certifications    TeacherCertification[]
+  attendances       TeacherAttendance[]
+  assignments       TeacherAssignment[]
+
+  @@index([name])
+}
+
+model TeacherEducation {
+  id        String   @id @default(cuid())
+  teacherId String
+  teacher   Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  level     String
+  major     String?
+  institution String?
+  year      Int?
+}
+
+model TeacherPosition {
+  id        String   @id @default(cuid())
+  teacherId String
+  teacher   Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  position  String
+  startDate DateTime?
+  endDate   DateTime?
+}
+
+model TeacherCertification {
+  id        String   @id @default(cuid())
+  teacherId String
+  teacher   Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  name      String
+  number    String?
+  year      Int?
+}
+
+// ── Rombel / Classes / Subjects / Schedules ───────────────────
+model Rombel {
+  id            String   @id @default(cuid())
+  academicYear  String
+  semester      String
+  level         String   // 1-6, 7-9, 10-12
+  name          String   // e.g. 5A
+  homeroomId    String?
+  room          String?
+  capacity      Int      @default(32)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  students      Student[]
+  schedules     Schedule[]
+  @@unique([academicYear, semester, name])
+}
+
+model Subject {
+  id        String     @id @default(cuid())
+  code      String     @unique
+  name      String
+  group     String?  // Kelompok
+  level     String?
+  teacherId String?
+  hours     Int        @default(2)
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  schedules Schedule[]
+}
+
+model Schedule {
+  id        String   @id @default(cuid())
+  rombelId  String
+  rombel    Rombel   @relation(fields: [rombelId], references: [id], onDelete: Cascade)
+  subjectId String?
+  subject   Subject? @relation(fields: [subjectId], references: [id])
+  teacherId String?
+  day       String   // Senin-Sabtu
+  startTime String   // HH:mm
+  endTime   String   // HH:mm
+  room      String?
+  createdAt DateTime @default(now())
+  @@index([teacherId, day, startTime])
+  @@index([rombelId, day])
+}
+
+model TeacherAssignment {
+  id        String   @id @default(cuid())
+  teacherId String
+  teacher   Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  subjectId String?
+  rombelId  String?
+  hours     Int      @default(0)
+}
+
+// ── Attendance ────────────────────────────────────────────────
+model StudentAttendance {
+  id        String   @id @default(cuid())
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  date      DateTime
+  status    String   // Hadir, Sakit, Izin, Alpa, Terlambat
+  subjectId String?
+  note      String?
+  createdAt DateTime @default(now())
+  @@unique([studentId, date, subjectId])
+  @@index([date])
+}
+
+model TeacherAttendance {
+  id        String   @id @default(cuid())
+  teacherId String
+  teacher   Teacher  @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  date      DateTime
+  status    String   // Hadir, Sakit, Izin, Cuti, Dinas Luar, Alpa, Terlambat, Pulang Lebih Awal
+  checkIn   String?
+  checkOut  String?
+  note      String?
+  createdAt DateTime @default(now())
+  @@unique([teacherId, date])
+  @@index([date])
+}
+
+// ── Grades ────────────────────────────────────────────────────
+model Assessment {
+  id          String         @id @default(cuid())
+  name        String   // Tugas, Ulangan, Formatif, Sumatif, UTS, UAS, etc.
+  type        String
+  subjectId   String?
+  rombelId    String?
+  weight      Float    @default(1.0)
+  maxScore    Int      @default(100)
+  date        DateTime?
+  isLocked    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  grades      StudentGrade[]
+}
+
+model StudentGrade {
+  id            String   @id @default(cuid())
+  studentId     String
+  student       Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  assessmentId  String?
+  assessment    Assessment? @relation(fields: [assessmentId], references: [id])
+  subjectId     String?
+  semester      String?
+  score         Float
+  grade         String?  // A,B,C
+  note          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  @@index([studentId, subjectId])
+}
+
+// ── Sync / Dapodik ────────────────────────────────────────────
+model SyncSession {
+  id          String   @id @default(cuid())
+  type        String   // TARIK_DATA | SYNC
+  status      String   // SUCCESS | PARTIAL | FAILED | RUNNING
+  startedAt   DateTime @default(now())
+  finishedAt  DateTime?
+  durationMs  Int?
+  totalRecords Int     @default(0)
+  newRecords  Int      @default(0)
+  updatedRecords Int   @default(0)
+  conflictCount Int    @default(0)
+  errorCount  Int      @default(0)
+  triggeredBy String?
+  detail      String?
+  records     SyncRecord[]
+  conflicts   SyncConflict[]
+}
+
+model SyncRecord {
+  id            String   @id @default(cuid())
+  sessionId     String
+  session       SyncSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  entity        String   // Student, Teacher, Rombel, etc.
+  entityId      String?
+  action        String   // NEW | UPDATED | UNCHANGED | CONFLICT | ERROR
+  localData     String?  // JSON
+  remoteData    String?  // JSON
+  createdAt     DateTime @default(now())
+}
+
+model SyncConflict {
+  id          String   @id @default(cuid())
+  sessionId   String
+  session     SyncSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  entity      String
+  entityId    String?
+  field       String?
+  localValue  String?
+  remoteValue String?
+  resolution  String?  // USE_LOCAL | USE_REMOTE | MERGE | SKIP
+  resolvedAt  DateTime?
+  createdAt   DateTime @default(now())
+}
+
+// ── Reports / Settings / Backups ──────────────────────────────
+model ReportTemplate {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  entity    String   // Teacher, Student, Grade, Attendance
+  columns   String   // JSON array of {key, label, order, visible}
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Backup {
+  id        String   @id @default(cuid())
+  filename  String
+  size      Int?
+  checksum  String?
+  status    String   // SUCCESS | FAILED
+  createdAt DateTime @default(now())
+  createdBy String?
+}
+
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
